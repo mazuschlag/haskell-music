@@ -1,0 +1,18 @@
+LANGUAGE KEY VALUES
+====================
+r = rest
+a,b,c,d,e,f,g = pitch (relative)
+
++ = sharp
+- = flat
+
+, = double dotted note
+. = dotted note
+OO = double whole note
+O = whole note
+o = half note
+> = quarter note
+) = eigth note
+)) = sixteenth note
+))) = thirty-second note
+)))) = sixty-forth note
