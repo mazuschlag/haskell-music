@@ -1,10 +1,11 @@
 module Parser.Tokenizer where
 
 import Data.Ratio
-import Data.Char (isSpace, toUpper)
-import Data.Text (chunksOf)
-import Data.Map (Map, (!))
-import qualified Data.Map as Map
+import Data.List.Split
+import Data.Text
+--import Data.Char (isSpace, toUpper)
+--import Data.Map (Map, (!))
+--import qualified Data.Map as Map
 
 type Phrase = String
 
@@ -12,19 +13,19 @@ type Tokens = [Token]
 
 data Token = Token {f :: Form, v :: String, d :: Rational}
 
-data Form = Note | Rest | Chord | Error | Space | Empty   
+data Form = Note | Rest | Chord | Space | Error   
     deriving (Show, Ord, Eq, Read, Enum, Bounded)
 
 instance Show Token where
-    show (Token Note v d) = (show Note) ++ " " ++ v ++ " " ++ (show d) ++ " "
-    show (Token Chord v d) = (show Chord) ++ " " ++ v ++ " " ++ (show d) ++ " "
-    show (Token Rest v d) = (show Rest) ++ " " ++ v ++ " " ++ (show d) ++ " "
+    show (Token Note v d) = (show Note) ++ " " ++ v ++ " " ++ (show d)
+    show (Token Chord v d) = (show Chord) ++ " " ++ v ++ " " ++ (show d)
+    show (Token Rest v d) = (show Rest) ++ " " ++ v ++ " " ++ (show d)
     show (Token Error v d) = (show Error) ++ " " ++ v ++ " "
-    show (Token Space v d) = (show Space) ++ " "
+    show (Token Space v d) = v
 
 tokenizePhrase :: Phrase -> Tokens
 tokenizePhrase phrase =
-    let tN = tokenizeNotes (dropWhile (/= '|') phrase) (Token Empty [] (0%1))
+    let tN = tokenizeNotes (dropWhile (/= '|') phrase) (Token Space [] (0%1))
         tSF = tokenizeSharpsFlats phrase
     in map (tokenizeFinal tSF) tN
 
@@ -37,32 +38,32 @@ tokenizeSharpsFlats :: Phrase -> Map.Map Char Char
 tokenizeSharpsFlats line =
     let notes = filter isNote . takeWhile (/= '|') $ line
         sharpFlat = filter isSharpFlat . takeWhile (/= '|') $ line
-    in Map.fromList (zip (map toUpper notes) (convertSharpFlat sharpFlat))
+    in Map.fromList (zip notes (convertSharpFlat sharpFlat))
 
 -- tokenizeNotes function that relies on whitespace
 -- capitalizes all notes and rests
 tokenizeNotes :: Phrase -> Token -> Tokens
-tokenizeNotes [] (Token f v d) = if f /= Empty then (Token f v d):[] else []
+tokenizeNotes [] (Token f v d) = (Token f v d):[]
 tokenizeNotes (n:line) (Token f v d) = case tokenizeForm n f d of
-    1 -> appendToken line (Token f v d) (Token Space [] (0%1))
-    2 -> appendToken line (Token f v d) (Token Note [n] (0%1))
+    1 -> appendToken line (Token f v d) (Token Note [n] (0%1))
+    2 -> appendToken line (Token f v d) (Token Rest [n] (0%1))
     3 -> tokenizeNotes line (Token f v $ calcDur d n)
     4 -> tokenizeNotes line (Token f (v++(convertSharpFlat[n])) d)
     5 -> appendToken line (Token Chord v d) (Token Chord [n] (0%1))
-    6 -> tokenizeNotes line (Token Note (n:v) d)
-    7 -> tokenizeNotes line (Token Rest (n:v) d)
-    0 -> tokenizeNotes line (Token Error (v++[n]) d)
+    6 -> appendToken line (Token f v d) (Token Error [n] (0%1))
+    7 -> tokenizeNotes line (Token f (v++[n]) d)
+    0 -> appendToken line (Token f v d) (Token Space [n] (0%1))
     where appendToken l oldT newT = oldT : tokenizeNotes l newT
 
 tokenizeForm :: Char -> Form -> Rational -> Int
 tokenizeForm n f d
-    | (isSpace n)                                  = 1
-    | (isNote n) && (f == Space)                   = 2
+    | (isNote n) && (f == Space || f == Error)     = 1
+    | (isRest n) && (f == Space || f == Error)     = 2
     | (isDur n) && (f >= Note && f <= Chord)       = 3
     | (isSharpFlat n) && (f == Note || f == Chord) = 4
     | (isNote n) && (f == Note) && (d > 0%1)       = 5
-    | (isNote n) && (f == Empty)                   = 6
-    | (isRest n) && (f == Empty)                   = 7
+    | (isSharpFlat n || isDur n) && (f == Space)   = 6
+    | (isSharpFlat n || isDur n) && (f == Error)   = 7
     | otherwise                                    = 0
 
 -- Some Helper functions
