@@ -1,10 +1,12 @@
 module Parser.IO where
 
 import Data.Ratio
+import Data.List.Split
 import System.IO
 import System.IO.Error
 import System.Environment
 import Parser.Tokenizer
+import Parser.Error
 --import Euterpea as Euterpea
 
 start :: IO()
@@ -14,7 +16,12 @@ parseFile :: IO()
 parseFile = do
     (fileName:_) <- getArgs
     contents <- readFile fileName
-    putStrLn $ concat . map show . tokenizePhrase $ contents
+    let tokens  = tokenizePhrase contents
+    putStrLn $ printTokens fileName tokens    
+
+printTokens :: String -> Tokens -> String
+printTokens fileName tokens = fileName ++ ": " ++ 
+    (concat . map show $ tokens)
 
 handler :: IOError -> IO()
 handler e
