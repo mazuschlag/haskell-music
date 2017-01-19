@@ -7,7 +7,7 @@ import System.IO.Error
 import System.Environment
 import Parser.Tokenizer
 import Parser.Error
---import Euterpea as Euterpea
+import Parser.Compiler
 
 start :: IO()
 start = parseFile `catchIOError` handler
@@ -17,10 +17,17 @@ parseFile = do
     (fileName:_) <- getArgs
     contents <- readFile fileName
     let tokens  = tokenizePhrase contents
-    putStrLn $ printTokens fileName tokens    
+        tErrors = tokenError tokens  
+    putStrLn $ printTokens fileName tokens
+    putStrLn $ show (checkNotes tokens)
+    --putStrLn $ printTokenError fileName tErrors
 
 printTokens :: String -> Tokens -> String
-printTokens fileName tokens = fileName ++ ": " ++ 
+printTokens fileName tokens = fileName ++ ":\n\t" ++ 
+    (concat . map show $ tokens)
+
+printTokenError :: String -> Tokens -> String
+printTokenError fileName tokens = "Token Error:" ++ fileName ++ ":\n\t" ++
     (concat . map show $ tokens)
 
 handler :: IOError -> IO()
