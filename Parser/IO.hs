@@ -18,10 +18,11 @@ parseFile = do
     contents <- readFile fileName
     let tokens  = tokenizePhrase contents
         tErrors = tokenError tokens  
-    putStrLn $ printTokens fileName tokens
-    putStrLn $ show (checkNotes tokens)
+    --putStrLn $ printTokens fileName tokens
+    --putStrLn $ show (checkNotes tokens)
     --putStrLn $ printTokenError fileName tErrors
-
+    putStrLn $ printTokens fileName (applyKeySig tokens)
+    
 printTokens :: String -> Tokens -> String
 printTokens fileName tokens = fileName ++ ":\n\t" ++ 
     (concat . map show $ tokens)

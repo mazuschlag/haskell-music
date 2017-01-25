@@ -7,14 +7,14 @@ type Phrase = String
 
 type Tokens = [Token]
 
-data Token = Token {f :: Form, v :: String}
+data Token = Token {f :: Form, p :: Phrase}
 
 data Form = Instrument | Key | Tempo | Note | Empty | Grammar | Error   
     deriving (Show, Ord, Eq, Read, Enum, Bounded)
 
 instance Show Token where
-    show (Token Empty v) = show Empty ++ " "
-    show (Token f v) = (show f) ++ " " ++ v ++ " "
+    show (Token Empty p) = show Empty ++ " "
+    show (Token f p) = (show f) ++ " " ++ p ++ " "
 
 tokenizePhrase :: Phrase -> Tokens
 tokenizePhrase phrase = map makeToken (splitOn " " phrase)

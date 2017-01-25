@@ -7,23 +7,23 @@ data Category = Tone | Rest | Octave | Accidental | Duration | None
     
 tokenError :: Tokens -> Tokens
 tokenError tokens = foldr checkE [] tokens
-    where checkE (Token f v) acc = if f /= Error then acc else (Token f v) : acc
+    where checkE (Token f p) acc = if f /= Error then acc else (Token f p) : acc
 
 checkNotes :: Tokens -> [Bool]
 checkNotes tokens = map (noteError None) (getNotes tokens)
 
 getNotes :: Tokens -> Tokens
 getNotes tokens = 
-    foldr (\(Token f v) acc -> if f == Note then (Token f v) : acc else acc) [] tokens
+    foldr (\(Token f p) acc -> if f == Note then (Token f p) : acc else acc) [] tokens
 
 noteError :: Category -> Token -> Bool
 noteError cat (Token f []) = False
-noteError cat (Token f (v:vs))
-    | (isTone v) && (cat == None || cat == Duration) = noteError Tone (Token f vs)
-    | (isRest v) && (cat == None)                    = noteError Rest (Token f vs)
-    | (isOctave v) && (cat == Tone)                  = noteError Octave (Token f vs)
-    | (isAccidental v) && (cat == Octave)            = noteError Accidental(Token f vs)
-    | (isDuration v) && (cat /= None && cat /= Tone) = noteError Duration (Token f vs)
+noteError cat (Token f (p:ps))
+    | (isTone p) && (cat == None || cat == Duration) = noteError Tone (Token f ps)
+    | (isRest p) && (cat == None)                    = noteError Rest (Token f ps)
+    | (isOctave p) && (cat == Tone)                  = noteError Octave (Token f ps)
+    | (isAccidental p) && (cat == Octave)            = noteError Accidental(Token f ps)
+    | (isDuration p) && (cat /= None && cat /= Tone) = noteError Duration (Token f ps)
     | otherwise = True
 
 --Helper functions
