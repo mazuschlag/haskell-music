@@ -1,43 +1,53 @@
 module Parser.Error where
 
 import Parser.Tokenizer
+import Parser.Compiler
 
-data Category = Tone | Rest | Octave | Accidental | Duration | None
+data Category = Sound | Silence | Octave | Accidental | Duration | None
     deriving (Show, Ord, Eq, Read)
     
 tokenError :: Tokens -> Tokens
 tokenError tokens = foldr checkE [] tokens
     where checkE (Token f p) acc = if f /= Error then acc else (Token f p) : acc
 
-checkNotes :: Tokens -> [Bool]
-checkNotes tokens = map (noteError None) (getNotes tokens)
+checkTones :: Tokens -> [Bool]
+checkTones tokens = map (toneError None) (getTones tokens)
 
-getNotes :: Tokens -> Tokens
-getNotes tokens = 
-    foldr (\(Token f p) acc -> if f == Note then (Token f p) : acc else acc) [] tokens
+getTones :: Tokens -> Tokens
+getTones tokens = 
+    foldr (\(Token f p) acc -> if f == Tone then (Token f p) : acc else acc) [] tokens
 
-noteError :: Category -> Token -> Bool
-noteError cat (Token f []) = False
-noteError cat (Token f (p:ps))
-    | (isTone p) && (cat == None || cat == Duration) = noteError Tone (Token f ps)
-    | (isRest p) && (cat == None)                    = noteError Rest (Token f ps)
-    | (isOctave p) && (cat == Tone)                  = noteError Octave (Token f ps)
-    | (isAccidental p) && (cat == Octave)            = noteError Accidental(Token f ps)
-    | (isDuration p) && (cat /= None && cat /= Tone) = noteError Duration (Token f ps)
+toneError :: Category -> Token -> Bool
+toneError cat (Token f []) = False
+toneError cat (Token f (p:ps))
+    | (isSound p) && (cat == None || cat == Duration) = toneError Sound (Token f ps)
+    | (isSilence p) && (cat == None)                    = toneError Silence (Token f ps)
+    | (isOctave p) && (cat == Sound)                  = toneError Octave (Token f ps)
+    | (isSharpFlat p) && (cat == Octave)            = toneError Accidental(Token f ps)
+    | (isDuration p) && (cat /= None && cat /= Sound) = toneError Duration (Token f ps)
     | otherwise = True
 
---Helper functions
-isTone :: Char -> Bool
-isTone t = t `elem` "abcdefg"
+-- Check steps of Compilation --
+checkPitch :: Tokens -> [Pitch]
+checkPitch [] = []
+checkPitch ((Token f p) : tokens) 
+    | f == Tone = (read (getPitchClass p), read (getOctave p)) : checkPitch tokens
+    | otherwise = checkPitch tokens
 
-isRest :: Char -> Bool
-isRest r = r == 'r'
+checkDur :: Tokens -> [Dur]
+checkDur [] = []
+checkDur ((Token f p) : tokens)
+    | f == Tone = createDur p : checkDur tokens
+    | otherwise = checkDur tokens
 
-isOctave :: Char -> Bool
-isOctave o = o `elem` "0123456789"
+checkPitchClass :: Tokens -> [PitchClass]
+checkPitchClass [] = []
+checkPitchClass ((Token f p) : tokens)
+    | f == Tone = read (getPitchClass p) : checkPitchClass tokens
+    | otherwise = checkPitchClass tokens
 
-isAccidental :: Char -> Bool
-isAccidental a = a `elem` "+-"
-
-isDuration :: Char -> Bool
-isDuration d = d `elem` "o>)\\.,"
+checkOctave :: Tokens -> [Octave]
+checkOctave [] = []
+checkOctave ((Token f p) : tokens) 
+    | f == Tone = read (getOctave p) : checkOctave tokens
+    | otherwise = checkOctave tokens

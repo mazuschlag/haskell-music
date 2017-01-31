@@ -1,7 +1,7 @@
 module Parser.Tokenizer where
 
 import Data.List.Split
-import Data.Char (toLower, isSpace)
+import Data.Char (toUpper, toLower, isSpace)
 
 type Phrase = String
 
@@ -9,7 +9,7 @@ type Tokens = [Token]
 
 data Token = Token {f :: Form, p :: Phrase}
 
-data Form = Instrument | Key | Tempo | Note | Empty | Grammar | Error   
+data Form = Instrument | Key | Tempo | Tone | Empty | Grammar | Error   
     deriving (Show, Ord, Eq, Read, Enum, Bounded)
 
 instance Show Token where
@@ -25,7 +25,7 @@ makeToken token
     | isInstrument sToken = tokenizeInstrument sToken
     | isKey sToken        = tokenizeKey sToken
     | isTempo sToken      = tokenizeTempo sToken
-    | isNote sToken       = tokenizeNote sToken
+    | isTone sToken       = tokenizeTone sToken
     | isGrammar sToken    = tokenizeGrammar sToken
     | otherwise           = tokenizeError sToken
     where sToken = strip token
@@ -37,13 +37,13 @@ tokenizeInstrument :: String -> Token
 tokenizeInstrument instrument = Token Instrument instrument 
 
 tokenizeKey :: String -> Token
-tokenizeKey key = Token Key key
+tokenizeKey key = Token Key (map toUpper key)
 
 tokenizeTempo :: String -> Token
 tokenizeTempo tempo = Token Tempo tempo
 
-tokenizeNote :: String -> Token
-tokenizeNote note = Token Note (map toLower note)
+tokenizeTone :: String -> Token
+tokenizeTone note = Token Tone (map toUpper note)
 
 tokenizeGrammar :: String -> Token
 tokenizeGrammar grammar = Token Grammar grammar
@@ -69,8 +69,8 @@ isTempo xs =
     let tempos = "1234567890"
     in foldl (\acc x -> if x `elem` tempos then acc else False) True xs
 
-isNote :: String -> Bool
-isNote xs = 
+isTone :: String -> Bool
+isTone xs = 
     let notes = "ABCDEFGRabcdefgr,.>)o+-0123456789\\" 
     in foldl (\acc x -> if x `elem` notes then acc else False) True xs
 
