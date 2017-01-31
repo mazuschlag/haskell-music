@@ -80,8 +80,8 @@ calcDur d '\\' = d * 1/2
 calcDur d 'o'  = d
 calcDur d '.'  = d + (d * 1/2)
 calcDur d ','  = d + ((d * 1/2) + (d * 1/4))
-calcDur _ '>'  = 1/4
-calcDur _ ')'  = 1/8
+calcDur d '>'  = d * 1/4
+calcDur d ')'  = d * 1/8
 calcDur d _    = d
 
 -- Get and apply the Key Signature to necessary notes --
