@@ -40,11 +40,13 @@ compileMusic tokens = foldr (:+:) (Prim (Rest 0)) (compilePrims tokens)
 compilePrims :: Tokens -> [Music Pitch]
 compilePrims [] = []
 compilePrims ((Token f p) : tokens) 
-    | f == Tone = toPrim p : compilePrims tokens
-    | otherwise = compilePrims tokens
+    | f == Tone || f == Silent = toPrim p f : compilePrims tokens
+    | otherwise                = compilePrims tokens
 
-toPrim :: Phrase -> Music Pitch
-toPrim ps = Prim (Note (createDur ps) (createPitch ps))
+toPrim :: Phrase -> Form -> Music Pitch
+toPrim ps Tone   = Prim (Note (createDur ps) (createPitch ps))
+toPrim ps Silent = Prim (Rest (createDur ps))
+
 
 -- Creating a Pitch by getting the note's PitchClass and Octave --
 createPitch :: Phrase -> Pitch

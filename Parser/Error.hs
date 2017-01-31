@@ -21,10 +21,10 @@ toneError :: Category -> Token -> Bool
 toneError cat (Token f []) = False
 toneError cat (Token f (p:ps))
     | (isSound p) && (cat == None || cat == Duration) = toneError Sound (Token f ps)
-    | (isSilence p) && (cat == None)                    = toneError Silence (Token f ps)
+    | (isSilence p) && (cat == None)                  = toneError Silence (Token f ps)
     | (isOctave p) && (cat == Sound)                  = toneError Octave (Token f ps)
-    | (isSharpFlat p) && (cat == Octave)            = toneError Accidental(Token f ps)
-    | (isDuration p) && (cat /= None && cat /= Sound) = toneError Duration (Token f ps)
+    | (isSharpFlat p) && (cat == Octave)              = toneError Accidental (Token f ps)
+    | (isDuration p) && (cat /= None && cat /= Sound && cat /= Silence) = toneError Duration (Token f ps)
     | otherwise = True
 
 -- Check steps of Compilation --

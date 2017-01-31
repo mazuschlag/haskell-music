@@ -17,7 +17,7 @@ parseFile = do
     (fileName:_) <- getArgs
     contents <- readFile fileName
     let tokens  = tokenizePhrase contents
-        tErrors = tokenError tokens  
+    --tErrors = tokenError tokens  
     --putStrLn $ printTokens fileName (applyKeySig tokens)
     --putStrLn $ show (checkNotes tokens)
     --putStrLn $ printTokenError fileName tErrors

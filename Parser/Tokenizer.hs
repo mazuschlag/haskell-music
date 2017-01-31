@@ -9,7 +9,7 @@ type Tokens = [Token]
 
 data Token = Token {f :: Form, p :: Phrase}
 
-data Form = Instrument | Key | Tempo | Tone | Empty | Grammar | Error   
+data Form = Instrument | Key | Tempo | Tone | Silent | Empty | Grammar | Error   
     deriving (Show, Ord, Eq, Read, Enum, Bounded)
 
 instance Show Token where
@@ -26,6 +26,7 @@ makeToken token
     | isKey sToken        = tokenizeKey sToken
     | isTempo sToken      = tokenizeTempo sToken
     | isTone sToken       = tokenizeTone sToken
+    | isRest sToken       = tokenizeRest sToken
     | isGrammar sToken    = tokenizeGrammar sToken
     | otherwise           = tokenizeError sToken
     where sToken = strip token
@@ -44,6 +45,9 @@ tokenizeTempo tempo = Token Tempo tempo
 
 tokenizeTone :: String -> Token
 tokenizeTone note = Token Tone (map toUpper note)
+
+tokenizeRest :: String -> Token
+tokenizeRest rest = Token Silent (map toUpper rest)
 
 tokenizeGrammar :: String -> Token
 tokenizeGrammar grammar = Token Grammar grammar
@@ -71,8 +75,13 @@ isTempo xs =
 
 isTone :: String -> Bool
 isTone xs = 
-    let notes = "ABCDEFGRabcdefgr,.>)o+-0123456789\\" 
+    let notes = "ABCDEFGabcdefg,.>)o\\+-0123456789" 
     in foldl (\acc x -> if x `elem` notes then acc else False) True xs
+
+isRest :: String -> Bool
+isRest xs =
+    let rests = "Rr,.>)o\\" 
+    in foldl (\acc x -> if x `elem` rests then acc else False) True xs
 
 isGrammar :: String -> Bool
 isGrammar xs =
