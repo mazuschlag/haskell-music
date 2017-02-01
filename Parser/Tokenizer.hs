@@ -9,7 +9,8 @@ type Tokens = [Token]
 
 data Token = Token {f :: Form, p :: Phrase}
 
-data Form = Instrument | Key | Tempo | Tone | Silent | Empty | Grammar | Error   
+data Form = Instrument | Key | Tempo | Tone | Chord | Silent | Empty | Grammar 
+            | Error   
     deriving (Show, Ord, Eq, Read, Enum, Bounded)
 
 instance Show Token where
@@ -44,7 +45,9 @@ tokenizeTempo :: String -> Token
 tokenizeTempo tempo = Token Tempo tempo
 
 tokenizeTone :: String -> Token
-tokenizeTone note = Token Tone (map toUpper note)
+tokenizeTone note = if isChord note
+                    then Token Chord (map toUpper note)
+                    else Token Tone (map toUpper note)
 
 tokenizeRest :: String -> Token
 tokenizeRest rest = Token Silent (map toUpper rest)
@@ -78,6 +81,14 @@ isTone xs =
     let notes = "ABCDEFGabcdefg,.>)o\\+-0123456789" 
     in foldl (\acc x -> if x `elem` notes then acc else False) True xs
 
+isNote :: Char -> Bool
+isNote n = n `elem` "ABCDEFGabcdefg"
+
+isChord :: String -> Bool
+isChord xs = 
+    let total = foldl (\acc x -> if isNote x then acc + 1 else acc) 0 xs
+    in total > 1
+    
 isRest :: String -> Bool
 isRest xs =
     let rests = "Rr,.>)o\\" 

@@ -40,13 +40,26 @@ compileMusic tokens = foldr (:+:) (Prim (Rest 0)) (compilePrims tokens)
 compilePrims :: Tokens -> [Music Pitch]
 compilePrims [] = []
 compilePrims ((Token f p) : tokens) 
-    | f == Tone || f == Silent = toPrim p f : compilePrims tokens
+    | f == Tone || f == Silent = toPrim f p : compilePrims tokens
+    | f == Chord               = compileChord p : compilePrims tokens
     | otherwise                = compilePrims tokens
 
-toPrim :: Phrase -> Form -> Music Pitch
-toPrim ps Tone   = Prim (Note (createDur ps) (createPitch ps))
-toPrim ps Silent = Prim (Rest (createDur ps))
+toPrim :: Form -> Phrase -> Music Pitch
+toPrim Tone ps   = Prim (Note (createDur ps) (createPitch ps))
+toPrim Silent ps = Prim (Rest (createDur ps))
 
+-- Split and compile chords -- 
+compileChord :: Phrase -> Music Pitch
+compileChord chord =
+    let notes = splitChord chord []
+        prims = map (toPrim Tone) notes
+    in foldr (:=:) (Prim (Rest 0)) prims
+
+splitChord :: Phrase -> Phrase -> [Phrase]
+splitChord [] previous = [previous]
+splitChord (p:ps) previous 
+    | (isSound p) && (length previous > 2) = previous : splitChord ps [p]
+    | otherwise                            = splitChord ps (previous++[p])
 
 -- Creating a Pitch by getting the note's PitchClass and Octave --
 createPitch :: Phrase -> Pitch
@@ -95,8 +108,8 @@ applyKeySig tokens =
 mapKeySig :: Tokens -> KeySig -> Tokens
 mapKeySig [] _ = []
 mapKeySig ((Token f p) : tokens) keySig
-    | f == Tone = (Token f (insertKeySig keySig p)) : mapKeySig tokens keySig
-    | otherwise = (Token f p) : mapKeySig tokens keySig
+    | f == Tone || f == Chord = (Token f (insertKeySig keySig p)) : mapKeySig tokens keySig
+    | otherwise               = (Token f p) : mapKeySig tokens keySig
     
 insertKeySig :: KeySig -> Phrase -> Phrase
 insertKeySig keySig [] = []
