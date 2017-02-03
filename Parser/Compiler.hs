@@ -33,6 +33,20 @@ data Music a  =
     deriving (Show, Eq, Ord)
 --------------------------------------------------------------------------------
 
+-- Compiles all instruments by blocks
+compileAll :: Tokens -> Music Pitch
+compileAll tokens = 
+    let tokenBlocks = splitInstruments tokens ([Token Empty []]) 0
+        musicBlocks = map compileMusic tokenBlocks
+    in foldr (:=:) (Prim (Rest 0)) musicBlocks
+
+splitInstruments :: Tokens -> Tokens -> Int -> [Tokens]
+splitInstruments [] currT _= []
+splitInstruments ((Token f p):tokens) currT count 
+    | (f == Grammar) && (count == 1) = currT : splitInstruments tokens ([Token Empty []]) 0
+    | (f == Grammar) && (count == 0) = splitInstruments tokens currT (count+1)
+    | otherwise                      = splitInstruments tokens (currT++[Token f p]) count
+
 -- Compile the notes as Euterpea Music --
 compileMusic :: Tokens -> Music Pitch
 compileMusic tokens = foldr (:+:) (Prim (Rest 0)) (compilePrims tokens) 

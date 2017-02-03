@@ -25,7 +25,7 @@ parseFile = do
     --putStrLn $ show . checkOctave $ tokens
     --putStrLn $ show . checkDur $ tokens
     --putStrLn $ show . checkPitch $ tokens
-    putStrLn $ show . compileMusic . applyKeySig $ tokens
+    putStrLn $ show . compileAll. applyKeySig $ tokens
     
 printTokens :: String -> Tokens -> String
 printTokens fileName tokens = fileName ++ ":\n\t" ++ 
