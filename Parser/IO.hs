@@ -1,6 +1,5 @@
 module Parser.IO where
 
-import Data.Ratio
 import Data.List.Split
 import System.IO
 import System.IO.Error
@@ -8,6 +7,7 @@ import System.Environment
 import Parser.Tokenizer
 import Parser.Error
 import Parser.Compiler
+import Euterpea
 
 start :: IO()
 start = parseFile `catchIOError` handler
@@ -16,8 +16,7 @@ parseFile :: IO()
 parseFile = do
     (fileName:_) <- getArgs
     contents <- readFile fileName
-    let tokens  = tokenizePhrase contents
-    --tErrors = tokenError tokens  
+    --tErrors = tokenError tokens
     --putStrLn $ printTokens fileName (applyKeySig tokens)
     --putStrLn $ show (checkNotes tokens)
     --putStrLn $ printTokenError fileName tErrors
@@ -25,10 +24,11 @@ parseFile = do
     --putStrLn $ show . checkOctave $ tokens
     --putStrLn $ show . checkDur $ tokens
     --putStrLn $ show . checkPitch $ tokens
-    putStrLn $ show . compileAll. applyKeySig $ tokens
-    
+    --putStrLn $ show . compileAll . applyKeySig . tokenizePhrase $ contents
+    play . compileAll . applyKeySig . tokenizePhrase $ contents
+
 printTokens :: String -> Tokens -> String
-printTokens fileName tokens = fileName ++ ":\n\t" ++ 
+printTokens fileName tokens = fileName ++ ":\n\t" ++
     (concat . map show $ tokens)
 
 printTokenError :: String -> Tokens -> String

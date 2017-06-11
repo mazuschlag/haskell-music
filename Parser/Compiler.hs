@@ -1,59 +1,35 @@
 module Parser.Compiler where
 
---import Euterpea
+import Euterpea
+import Euterpea.Music
 import Parser.Tokenizer
-import Data.Ratio
 import Data.Map (Map, (!))
 import Data.Char (toUpper)
 import qualified Data.Map as Map
 
 type KeySig = Map.Map Char Char
 
--- Euterpea Stuff -------------------------------------------------------------
-infixr 5 :+:, :=:
-
-type Octave = Int
-type Pitch = (PitchClass, Octave)
-type Dur = Rational
-
-data PitchClass = Cff | Cf | C | Dff | Cs | Df | Css | D | Eff | Ds 
-                | Ef | Fff | Dss | E | Ff | Es | F | Gff | Ess | Fs
-                | Gf | Fss | G | Aff | Gs | Af | Gss | A | Bff | As 
-                | Bf | Ass | B | Bs | Bss
-    deriving (Show, Eq, Ord, Read, Enum, Bounded)
-
-data Primitive a = Note Dur a        
-                 | Rest Dur          
-    deriving (Show, Eq, Ord)
-
-data Music a  = 
-      Prim (Primitive a)               --  primitive value 
-    | Music a :+: Music a              --  sequential composition
-    | Music a :=: Music a              --  parallel composition
-    deriving (Show, Eq, Ord)
---------------------------------------------------------------------------------
-
 -- Compiles all instruments by blocks
 compileAll :: Tokens -> Music Pitch
-compileAll tokens = 
+compileAll tokens =
     let tokenBlocks = splitInstruments tokens ([Token Empty []]) 0
         musicBlocks = map compileMusic tokenBlocks
     in foldr (:=:) (Prim (Rest 0)) musicBlocks
 
 splitInstruments :: Tokens -> Tokens -> Int -> [Tokens]
 splitInstruments [] currT _= []
-splitInstruments ((Token f p):tokens) currT count 
+splitInstruments ((Token f p):tokens) currT count
     | (f == Grammar) && (count == 1) = currT : splitInstruments tokens ([Token Empty []]) 0
     | (f == Grammar) && (count == 0) = splitInstruments tokens currT (count+1)
     | otherwise                      = splitInstruments tokens (currT++[Token f p]) count
 
 -- Compile the notes as Euterpea Music --
 compileMusic :: Tokens -> Music Pitch
-compileMusic tokens = foldr (:+:) (Prim (Rest 0)) (compilePrims tokens) 
+compileMusic tokens = foldr (:+:) (Prim (Rest 0)) (compilePrims tokens)
 
 compilePrims :: Tokens -> [Music Pitch]
 compilePrims [] = []
-compilePrims ((Token f p) : tokens) 
+compilePrims ((Token f p) : tokens)
     | f == Tone || f == Silent = toPrim f p : compilePrims tokens
     | f == Chord               = compileChord p : compilePrims tokens
     | otherwise                = compilePrims tokens
@@ -62,7 +38,7 @@ toPrim :: Form -> Phrase -> Music Pitch
 toPrim Tone ps   = Prim (Note (createDur ps) (createPitch ps))
 toPrim Silent ps = Prim (Rest (createDur ps))
 
--- Split and compile chords -- 
+-- Split and compile chords --
 compileChord :: Phrase -> Music Pitch
 compileChord chord =
     let notes = splitChord chord []
@@ -71,7 +47,7 @@ compileChord chord =
 
 splitChord :: Phrase -> Phrase -> [Phrase]
 splitChord [] previous = [previous]
-splitChord (p:ps) previous 
+splitChord (p:ps) previous
     | (isSound p) && (length previous > 2) = previous : splitChord ps [p]
     | otherwise                            = splitChord ps (previous++[p])
 
@@ -83,7 +59,7 @@ getPitchClass :: Phrase -> Phrase
 getPitchClass [] = []
 getPitchClass (n:ns)
     | isSound n     = n : getPitchClass ns
-    | isSharpFlat n = convertSharpFlat n : getPitchClass ns 
+    | isSharpFlat n = convertSharpFlat n : getPitchClass ns
     | otherwise     = getPitchClass ns
 
 getOctave :: Phrase -> Phrase
@@ -91,12 +67,10 @@ getOctave [] = []
 getOctave (o:os)
     | isOctave o = o : getOctave os
     | otherwise  = getOctave os
-    
+
 -- Interpret the duration of notes --
 createDur :: Phrase -> Dur
-createDur ds = 
-    let durValue = getDur ds
-    in foldl calcDur (1/1) durValue 
+createDur ds = calcDur . getDur $ ds
 
 getDur :: Phrase -> Phrase
 getDur [] = []
@@ -104,31 +78,33 @@ getDur (d:ds)
     | isDuration d = d : getDur ds
     | otherwise    = getDur ds
 
-calcDur :: Dur -> Char -> Dur
-calcDur d '\\' = d * 1/2
-calcDur d 'o'  = d
-calcDur d '.'  = d + (d * 1/2)
-calcDur d ','  = d + ((d * 1/2) + (d * 1/4))
-calcDur d '>'  = d * 1/4
-calcDur d ')'  = d * 1/8
-calcDur d _    = d
+calcDur :: Phrase -> Dur
+calcDur "o"       = wn
+calcDur "\\o"     = hn
+calcDur ">"       = qn
+calcDur ")"       = en
+calcDur "\\)"     = sn
+calcDur "\\\\)"   = tn
+calcDur "\\\\\\)" = sfn
+calcDur _         = 0
+
 
 -- Get and apply the Key Signature to necessary notes --
 applyKeySig :: Tokens -> Tokens
-applyKeySig tokens = 
+applyKeySig tokens =
     let keySig = keySigMap tokens
     in mapKeySig tokens keySig
-    
+
 mapKeySig :: Tokens -> KeySig -> Tokens
 mapKeySig [] _ = []
 mapKeySig ((Token f p) : tokens) keySig
     | f == Tone || f == Chord = (Token f (insertKeySig keySig p)) : mapKeySig tokens keySig
     | otherwise               = (Token f p) : mapKeySig tokens keySig
-    
+
 insertKeySig :: KeySig -> Phrase -> Phrase
 insertKeySig keySig [] = []
 insertKeySig keySig (p:ps)
-    | (isSound p) && (Map.member p keySig) = p : keySig ! p : insertKeySig keySig ps 
+    | (isSound p) && (Map.member p keySig) = p : keySig ! p : insertKeySig keySig ps
     | otherwise                            = p : insertKeySig keySig ps
 
 keySigMap :: Tokens -> KeySig
@@ -140,7 +116,7 @@ keySigMap tokens =
     in Map.fromList nSF
 
 getKeySig :: Tokens -> String
-getKeySig tokens = concat (keySig tokens) 
+getKeySig tokens = concat (keySig tokens)
     where keySig tokens = [p | (Token f p) <- tokens, f == Key]
 
 -- Helper functions --

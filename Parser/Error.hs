@@ -1,11 +1,12 @@
 module Parser.Error where
 
+import Euterpea
 import Parser.Tokenizer
 import Parser.Compiler
 
 data Category = Sound | Silence | Octave | Accidental | Duration | None
     deriving (Show, Ord, Eq, Read)
-    
+
 tokenError :: Tokens -> Tokens
 tokenError tokens = foldr checkE [] tokens
     where checkE (Token f p) acc = if f /= Error then acc else (Token f p) : acc
@@ -14,7 +15,7 @@ checkTones :: Tokens -> [Bool]
 checkTones tokens = map (toneError None) (getTones tokens)
 
 getTones :: Tokens -> Tokens
-getTones tokens = 
+getTones tokens =
     foldr (\(Token f p) acc -> if f == Tone then (Token f p) : acc else acc) [] tokens
 
 toneError :: Category -> Token -> Bool
@@ -30,7 +31,7 @@ toneError cat (Token f (p:ps))
 -- Check steps of Compilation --
 checkPitch :: Tokens -> [Pitch]
 checkPitch [] = []
-checkPitch ((Token f p) : tokens) 
+checkPitch ((Token f p) : tokens)
     | f == Tone = (read (getPitchClass p), read (getOctave p)) : checkPitch tokens
     | otherwise = checkPitch tokens
 
@@ -48,6 +49,6 @@ checkPitchClass ((Token f p) : tokens)
 
 checkOctave :: Tokens -> [Octave]
 checkOctave [] = []
-checkOctave ((Token f p) : tokens) 
+checkOctave ((Token f p) : tokens)
     | f == Tone = read (getOctave p) : checkOctave tokens
     | otherwise = checkOctave tokens
